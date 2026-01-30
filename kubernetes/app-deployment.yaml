@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-boxoffice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-boxoffice
+  template:
+    metadata:
+      labels:
+        app: demo-boxoffice
+    spec:
+      containers:
+        - name: demo-boxoffice
+          image: demo-boxoffice:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: MONGO_URL
+              value: "mongodb://mongo:27017"
+            - name: DB_NAME
+              value: "demo_boxoffice"
