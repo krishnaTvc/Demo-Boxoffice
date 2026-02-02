@@ -1,75 +1,99 @@
 const express = require('express');
-const path = require('path');
 const { MongoClient } = require('mongodb');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-const mongoUrl = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017';
-const dbName = process.env.DB_NAME || 'demo_boxoffice';
-const client = new MongoClient(mongoUrl);
-
+// Middleware to parse JSON bodies
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
 
-app.post('/api/movies', async (req, res) => {
-  const { movieName, hero, collection, status } = req.body;
+// Serve static files from the current directory
+app.use(express.static(__dirname));
 
-  if (!movieName || !hero || typeof collection !== 'number' || !status) {
-    return res.status(400).json({ message: 'All fields are required.' });
-  }
+// MongoDB Connection URL and Database Name
+const url = process.env.MONGO_URL || 'mongodb://localhost:27017';
+const dbName = process.env.DB_NAME || 'demo_boxoffice';
 
-  try {
-    const db = client.db(dbName);
-    await db.collection('movies').insertOne({
-      movie_name: movieName,
-      hero,
-      collection,
-      status,
-      created_at: new Date()
-    });
-    return res.status(201).json({ message: 'Movie saved.' });
-  } catch (err) {
-    return res.status(500).json({ message: 'Database error.', error: err.message });
-  }
-});
+let db;
 
-app.get('/api/movies', async (req, res) => {
-  const query = req.query.query || '';
-
-  try {
-    const db = client.db(dbName);
-    const filter = query
-      ? {
-          $or: [
-            { movie_name: { $regex: query, $options: 'i' } },
-            { hero: { $regex: query, $options: 'i' } }
-          ]
-        }
-      : {};
-
-    const rows = await db
-      .collection('movies')
-      .find(filter, { projection: { _id: 0, movie_name: 1, hero: 1, collection: 1, status: 1 } })
-      .sort({ created_at: -1 })
-      .toArray();
-
-    return res.json(rows);
-  } catch (err) {
-    return res.status(500).json({ message: 'Database error.', error: err.message });
-  }
-});
-
-async function start() {
-  try {
-    await client.connect();
-    app.listen(port, () => {
-      console.log(`Demo-Boxoffice running on http://localhost:${port}`);
-    });
-  } catch (err) {
-    console.error('Failed to connect to MongoDB:', err.message);
-    process.exit(1);
-  }
+async function connectDB() {
+    try {
+        const client = new MongoClient(url);
+        await client.connect();
+        console.log('Connected successfully to MongoDB server');
+        db = client.db(dbName);
+    } catch (err) {
+        console.error('Failed to connect to MongoDB:', err);
+        // Retry logic could be added here, but for now we just log
+        process.exit(1);
+    }
 }
 
-start();
+// Connect to DB on startup
+connectDB();
+
+// API Endpoints
+
+// POST /api/movies - Add a new movie
+app.post('/api/movies', async (req, res) => {
+    try {
+        const { movieName, hero, collection, status } = req.body;
+
+        if (!movieName || !hero || collection === undefined || !status) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        const movie = {
+            movie_name: movieName, // Map camelCase to snake_case
+            hero,
+            collection: parseFloat(collection),
+            status,
+            created_at: new Date()
+        };
+
+        const collectionName = 'movies';
+        const result = await db.collection(collectionName).insertOne(movie);
+
+        res.status(201).json({ message: 'Movie saved', id: result.insertedId });
+    } catch (err) {
+        console.error('Error saving movie:', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+// GET /api/movies - Search or list movies
+app.get('/api/movies', async (req, res) => {
+    try {
+        const { query } = req.query;
+        const filter = {};
+
+        if (query) {
+            // Simple case-insensitive regex search on movie_name or hero
+            const regex = new RegExp(query, 'i');
+            filter.$or = [
+                { movie_name: regex },
+                { hero: regex }
+            ];
+        }
+
+        const movies = await db.collection('movies')
+            .find(filter)
+            .sort({ created_at: -1 }) // Newest first
+            .toArray();
+
+        res.json(movies);
+    } catch (err) {
+        console.error('Error fetching movies:', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+// Fallback to index.html for any other GET request (SPA support if needed, though simple static serve handles root)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+});

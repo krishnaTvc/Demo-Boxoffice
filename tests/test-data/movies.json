@@ -1,0 +1,20 @@
+[
+  {
+    "movieName": "kameswari",
+    "hero": "shakeela",
+    "collection": "800",
+    "status": "Left"
+  },
+  {
+    "movieName": "manmadha banam",
+    "hero": "reshma",
+    "collection": "1200",
+    "status": "Running"
+  },
+  {
+    "movieName": "kama",
+    "hero": "sonam",
+    "collection": "1250",
+    "status": "Left"
+  }
+]

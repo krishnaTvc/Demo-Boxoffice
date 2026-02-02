@@ -2,12 +2,30 @@
   "name": "demo-boxoffice",
   "version": "1.0.0",
   "description": "Demo Boxoffice app",
+  "homepage": "https://github.com/krishnaTvc/Demo-Boxoffice#readme",
+  "bugs": {
+    "url": "https://github.com/krishnaTvc/Demo-Boxoffice/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krishnaTvc/Demo-Boxoffice.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
   "main": "server.js",
+  "directories": {
+    "test": "tests"
+  },
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "mongodb": "^6.6.2"
+    "mongodb": "^6.6.2",
+    "playwright": "^1.58.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.1"
   }
 }

@@ -21,7 +21,29 @@ spec:
           env:
             - name: PORT
               value: "3000"
+            # For Azure Cosmos DB (Mongo API), override MONGO_URL via a Secret
+            # kubectl create secret generic mongo-secret --from-literal=MONGO_URL='mongodb://user:password@host:port/...'
+            # And use valueFrom: secretKeyRef...
             - name: MONGO_URL
-              value: "mongodb://mongo:27017"
+              value: "mongodb://mongo:27017" 
             - name: DB_NAME
               value: "demo_boxoffice"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
