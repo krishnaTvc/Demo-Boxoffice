@@ -1,0 +1,31 @@
+name: Demo-Boxoffice CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      # Optional: quick sanity check that server can start
+      # Your app uses process.env.PORT or 3000
+      - name: Smoke start (10s)
+        run: |
+          PORT=3000 node server.js &
+          sleep 10
+          curl -f http://localhost:3000 || (echo "Server not responding" && exit 1)
